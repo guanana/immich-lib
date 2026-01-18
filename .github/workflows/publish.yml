@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   test-and-update-readme:
@@ -73,6 +74,7 @@ jobs:
     - name: Publish distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
+        # Publish to immich-lib project on PyPI
         # Trusted Publishing doesn't require a token if configured on PyPI side
         # Alternatively, use: password: ${{ secrets.PYPI_API_TOKEN }}
         print-hash: true
