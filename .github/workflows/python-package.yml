@@ -22,9 +22,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install .
+        pip install -e .
         pip install pytest pytest-cov coverage
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Run tests
       run: |
-        pytest tests/ --cov=src/immich_lib --cov-report=term-missing
+        pytest tests/ --cov=immich_lib --cov-report=term-missing
