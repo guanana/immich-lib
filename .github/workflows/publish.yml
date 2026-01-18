@@ -28,8 +28,7 @@ jobs:
 
       - name: Run tests and generate coverage
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-          pytest --cov=src/immich_lib tests/ --cov-report=xml
+          pytest tests/ --cov=src/immich_lib --cov-report=xml
 
       - name: Generate coverage badge
         run: |
