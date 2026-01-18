@@ -158,7 +158,7 @@ def main():
     p_download_album.add_argument("album_id_or_name", help="UUID or Name of the album")
     p_download_album.add_argument("--output", "-o", default="downloads", help="Output directory path")
     p_download_album.set_defaults(func=handle_download_album)
-
+python3 src/immich_lib/cli.py 
     # download-asset
     p_download_asset = subparsers.add_parser("download-asset", help="Download a single specific asset")
     p_download_asset.add_argument("asset_id", help="UUID of the asset")
