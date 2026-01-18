@@ -5,6 +5,12 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      force_publish:
+        description: 'Force publish even without new tag (uses current version)'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   test-and-update-readme:
