@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag to publish (optional, defaults to current tag)'
+        required: false
+        type: string
 
 jobs:
   test-and-update-readme:
@@ -14,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ inputs.tag_name || (github.ref_type == 'tag' && github.ref_name) || 'main' }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -58,23 +63,25 @@ jobs:
       contents: read
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag_name || (github.ref_type == 'tag' && github.ref_name) || 'main' }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
 
-    - name: Install pypa/build
-      run: python3 -m pip install build --user
+      - name: Install pypa/build
+        run: python3 -m pip install build --user
 
-    - name: Build a binary wheel and a source tarball
-      run: python3 -m build
+      - name: Build a binary wheel and a source tarball
+        run: python3 -m build
 
-    - name: Publish distribution to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        # Publish to immich-lib project on PyPI
-        # Trusted Publishing doesn't require a token if configured on PyPI side
-        # Alternatively, use: password: ${{ secrets.PYPI_API_TOKEN }}
-        print-hash: true
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Publish to immich-lib project on PyPI
+          # Trusted Publishing doesn't require a token if configured on PyPI side
+          # Alternatively, use: password: ${{ secrets.PYPI_API_TOKEN }}
+          print-hash: true
