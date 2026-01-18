@@ -1,0 +1,69 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Type of version bump (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Get current version
+      id: get_version
+      run: |
+        VERSION=$(grep -m 1 'version =' pyproject.toml | cut -d '"' -f 2)
+        echo "current_version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Current version is $VERSION"
+
+    - name: Calculate new version
+      id: calculate_version
+      run: |
+        IFS='.' read -r major minor patch <<< "${{ steps.get_version.outputs.current_version }}"
+        if [[ "${{ github.event.inputs.version_bump }}" == "major" ]]; then
+          new_version="$((major+1)).0.0"
+        elif [[ "${{ github.event.inputs.version_bump }}" == "minor" ]]; then
+          new_version="${major}.$((minor+1)).0"
+        else
+          new_version="${major}.${minor}.$((patch+1))"
+        fi
+        echo "new_version=$new_version" >> $GITHUB_OUTPUT
+        echo "New version: $new_version"
+
+    - name: Update pyproject.toml
+      run: |
+        sed -i 's/version = "${{ steps.get_version.outputs.current_version }}"/version = "${{ steps.calculate_version.outputs.new_version }}"/' pyproject.toml
+
+    - name: Commit and Push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add pyproject.toml
+        git commit -m "Bump version to ${{ steps.calculate_version.outputs.new_version }}"
+        git push origin main
+
+    - name: Create and Push Tag
+      run: |
+        git tag v${{ steps.calculate_version.outputs.new_version }}
+        git push origin v${{ steps.calculate_version.outputs.new_version }}
