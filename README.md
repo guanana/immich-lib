@@ -1,3 +1,5 @@
+[![Coverage Status](coverage.svg)](coverage.svg)
+
 # Immich Lib
 
 A Python library and CLI tool for interacting with an Immich server.

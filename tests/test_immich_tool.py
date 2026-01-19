@@ -21,47 +21,51 @@ class TestImmichClient(unittest.TestCase):
         """Set up a fresh ImmichClient instance before each test."""
         self.client = ImmichClient("http://fake-server", "fake-key")
 
-    @patch('requests.get')
-    def test_check_auth_success(self, mock_get):
+    @patch('requests.Session.request')
+    def test_check_auth_success(self, mock_request):
         """Test success case where version and albums endpoints both return 200."""
         mock_version = MagicMock()
         mock_version.status_code = 200
+        mock_version.headers = {"Content-Type": "application/json"}
         mock_version.json.return_value = {"version": "1.0.0"}
         
         mock_albums = MagicMock()
         mock_albums.status_code = 200
+        mock_albums.headers = {"Content-Type": "application/json"}
         
-        mock_get.side_effect = [mock_version, mock_albums]
+        mock_request.side_effect = [mock_version, mock_albums]
 
         result = self.client.check_auth()
         self.assertEqual(result["version"], "1.0.0")
-        self.assertEqual(mock_get.call_count, 2)
+        self.assertEqual(mock_request.call_count, 2)
 
-    @patch('requests.get')
-    def test_check_auth_failure_version(self, mock_get):
+    @patch('requests.Session.request')
+    def test_check_auth_failure_version(self, mock_request):
         """Test failure when the version endpoint fails."""
-        mock_get.side_effect = Exception("Network Error")
+        mock_request.side_effect = Exception("Network Error")
         with patch('sys.stdout', new=io.StringIO()):
             result = self.client.check_auth()
         self.assertIsNone(result)
 
-    @patch('requests.get')
-    def test_list_albums_success(self, mock_get):
+    @patch('requests.Session.request')
+    def test_list_albums_success(self, mock_request):
         """Test merging of owned and shared albums."""
         # Owned albums
         m1 = MagicMock()
         m1.status_code = 200
+        m1.headers = {"Content-Type": "application/json"}
         m1.json.return_value = [{"id": "a1", "albumName": "Owned"}]
         
         # Shared albums (with one overlap to test deduplication)
         m2 = MagicMock()
         m2.status_code = 200
+        m2.headers = {"Content-Type": "application/json"}
         m2.json.return_value = [
             {"id": "a1", "albumName": "Owned (but also shared)"},
             {"id": "a2", "albumName": "Shared"}
         ]
         
-        mock_get.side_effect = [m1, m2]
+        mock_request.side_effect = [m1, m2]
 
         result = self.client.list_albums()
         self.assertEqual(len(result), 2)
@@ -69,27 +73,29 @@ class TestImmichClient(unittest.TestCase):
         self.assertIn("a1", ids)
         self.assertIn("a2", ids)
 
-    @patch('requests.get')
-    def test_get_album_success(self, mock_get):
+    @patch('requests.Session.request')
+    def test_get_album_success(self, mock_request):
         """Test retrieving specific album details."""
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.headers = {"Content-Type": "application/json"}
         mock_response.json.return_value = {"id": "a1", "assets": [{"id": "p1"}]}
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = self.client.get_album("a1")
         self.assertEqual(result["id"], "a1")
         self.assertEqual(len(result["assets"]), 1)
 
-    @patch('requests.post')
-    def test_list_assets_success(self, mock_post):
+    @patch('requests.Session.request')
+    def test_list_assets_success(self, mock_request):
         """Test discovery of assets via search endpoint."""
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.headers = {"Content-Type": "application/json"}
         mock_response.json.return_value = {
             "assets": {"items": [{"id": "p1", "type": "IMAGE"}]}
         }
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = self.client.list_assets()
         self.assertEqual(len(result), 1)
@@ -107,28 +113,29 @@ class TestImmichClient(unittest.TestCase):
             result = self.client.find_album("vacation") # Case insensitive
             self.assertEqual(result["id"], "a1")
 
-    @patch('requests.get')
-    def test_get_asset_info_success(self, mock_get):
+    @patch('requests.Session.request')
+    def test_get_asset_info_success(self, mock_request):
         """Test retrieving asset metadata."""
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.headers = {"Content-Type": "application/json"}
         mock_response.json.return_value = {"id": "p1", "originalFileName": "file.jpg"}
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
         result = self.client.get_asset_info("p1")
         self.assertEqual(result["originalFileName"], "file.jpg")
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('requests.get')
-    def test_download_asset_success(self, mock_get, mock_file):
+    @patch('requests.Session.request')
+    def test_download_asset_success(self, mock_request, mock_file):
         """Test downloading an asset with streaming."""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.headers = {'content-length': '10'}
         mock_response.iter_content.return_value = [b'0123456789']
-        mock_get.return_value = mock_response
+        mock_request.return_value = mock_response
 
-        with patch('immich_lib.client.tqdm'):
+        with patch('immich_lib.api.assets.tqdm'):
             result = self.client.download_asset("p1", "local.jpg")
 
         self.assertTrue(result)
