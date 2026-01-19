@@ -116,6 +116,16 @@ def handle_download_album(client, args):
     print(
         f"Downloading {len(assets)} assets from album '{album_detail['albumName']}'..."
     )
+    if args.clean:
+        print("Cleaning up...")
+        for filename in os.listdir(args.output):
+            for i in [".jpg",".jpeg",".png",".gif",".bmp",".webp"]:
+                if filename.endswith(i):
+                    file_path = os.path.join(args.output, filename)
+                    try:
+                        os.remove(file_path)
+                    except Exception as e:
+                        print(f"Error deleting {file_path}: {e}")
     os.makedirs(args.output, exist_ok=True)
 
     for asset in assets:
@@ -192,6 +202,8 @@ def main():
     p_download_album.add_argument(
         "--output", "-o", default="downloads", help="Output directory path"
     )
+    p_download_album.add_argument("--clean", "-c", help="Remove any other file from the destination folder", action="store_true", default=False)
+
     p_download_album.set_defaults(func=handle_download_album)
 
     # download-asset
@@ -200,6 +212,7 @@ def main():
     )
     p_download_asset.add_argument("asset_id", help="UUID of the asset")
     p_download_asset.add_argument("--output", "-o", help="Explicit output file path")
+    p_download_asset.set_defaults(func=handle_download_asset)
     p_download_asset.set_defaults(func=handle_download_asset)
 
     args = parser.parse_args()
