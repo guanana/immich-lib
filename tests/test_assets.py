@@ -128,31 +128,31 @@ class TestAssetsMixin(unittest.TestCase):
         with self.assertRaises(requests.exceptions.HTTPError):
             self.client.delete_assets(["asset1"])
 
-@patch("requests.Session.request")
-     def test_download_asset_success_with_path(self, mock_request):
-         """Test successful asset download with file path"""
-         # Mock response for downloading the asset
-         mock_response = MagicMock()
-         mock_response.status_code = 200
-         mock_response.headers = {"Content-Type": "image/jpeg", "content-length": "1024"}
-         mock_response.iter_content.return_value = [b"test data"]
+    @patch("requests.Session.request")
+    def test_download_asset_success_with_path(self, mock_request):
+        """Test successful asset download with file path"""
+        # Mock response for downloading the asset
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"Content-Type": "image/jpeg", "content-length": "1024"}
+        mock_response.iter_content.return_value = [b"test data"]
 
-         # Mock file operations
-         with patch("builtins.open", MagicMock()) as mock_open:
-             # Mock tqdm class directly since it's imported in the client module
-             with patch("immich_lib.api.assets.tqdm") as mock_tqdm:
-                 mock_tqdm_instance = MagicMock()
-                 mock_tqdm.return_value.__enter__.return_value = mock_tqdm_instance
+        # Mock file operations
+        with patch("builtins.open", MagicMock()) as mock_open:
+            # Mock tqdm class directly since it's imported in the client module
+            with patch("immich_lib.api.assets.tqdm") as mock_tqdm:
+                mock_tqdm_instance = MagicMock()
+                mock_tqdm.return_value.__enter__.return_value = mock_tqdm_instance
 
-                 mock_request.return_value = mock_response
+                mock_request.return_value = mock_response
 
-                 # Create temporary directory and file
-                 with tempfile.TemporaryDirectory() as tmpdir:
-                     test_file = os.path.join(tmpdir, "test.jpg")
-                     result = self.client.download_asset("asset123", test_file)
+                # Create temporary directory and file
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    test_file = os.path.join(tmpdir, "test.jpg")
+                    result = self.client.download_asset("asset123", test_file)
 
-                     # Should return True to indicate success
-                     self.assertTrue(result)
+                    # Should return True to indicate success
+                    self.assertTrue(result)
 
     @patch("requests.Session.request")
     def test_download_asset_success_no_path(self, mock_request):
