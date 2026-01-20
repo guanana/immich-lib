@@ -3,21 +3,16 @@ from unittest.mock import patch, MagicMock
 import requests
 import os
 import tempfile
-from immich_lib.api.assets import AssetsMixin
+from immich_lib.client import ImmichClient
 
 
-# Create a test class that inherits from AssetsMixin to create tests
+# Create a test class that uses the actual client with mocked methods
 class TestAssetsMixin(unittest.TestCase):
     def setUp(self):
-        # Create a mock client instance
+        # Create a proper client instance that will be used for testing
         self.server_url = "http://localhost:2283"
         self.api_key = "test-api-key"
-        # Create a minimal mock client that inherits from AssetsMixin
-        self.client = type("MockClient", (AssetsMixin,), {})()
-        self.client.server_url = self.server_url
-        self.client.api_url = f"{self.server_url}/api"
-        self.client.headers = {"x-api-key": self.api_key}
-        self.client.session = MagicMock()
+        self.client = ImmichClient(self.server_url, self.api_key)
 
     @patch("requests.Session.request")
     def test_list_assets_success(self, mock_request):
@@ -133,30 +128,31 @@ class TestAssetsMixin(unittest.TestCase):
         with self.assertRaises(requests.exceptions.HTTPError):
             self.client.delete_assets(["asset1"])
 
-    @patch("requests.Session.request")
-    def test_download_asset_success_with_path(self, mock_request):
-        """Test successful asset download with file path"""
-        # Mock response for downloading the asset
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.headers = {"Content-Type": "image/jpeg", "content-length": "1024"}
-        mock_response.iter_content.return_value = [b"test data"]
+@patch("requests.Session.request")
+     def test_download_asset_success_with_path(self, mock_request):
+         """Test successful asset download with file path"""
+         # Mock response for downloading the asset
+         mock_response = MagicMock()
+         mock_response.status_code = 200
+         mock_response.headers = {"Content-Type": "image/jpeg", "content-length": "1024"}
+         mock_response.iter_content.return_value = [b"test data"]
 
-        # Mock file operations
-        with patch("builtins.open", MagicMock()) as mock_open:
-            with patch("tqdm") as mock_tqdm:
-                mock_tqdm_instance = MagicMock()
-                mock_tqdm.return_value.__enter__.return_value = mock_tqdm_instance
+         # Mock file operations
+         with patch("builtins.open", MagicMock()) as mock_open:
+             # Mock tqdm class directly since it's imported in the client module
+             with patch("immich_lib.api.assets.tqdm") as mock_tqdm:
+                 mock_tqdm_instance = MagicMock()
+                 mock_tqdm.return_value.__enter__.return_value = mock_tqdm_instance
 
-                mock_request.return_value = mock_response
+                 mock_request.return_value = mock_response
 
-                # Create temporary directory and file
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    test_file = os.path.join(tmpdir, "test.jpg")
-                    result = self.client.download_asset("asset123", test_file)
+                 # Create temporary directory and file
+                 with tempfile.TemporaryDirectory() as tmpdir:
+                     test_file = os.path.join(tmpdir, "test.jpg")
+                     result = self.client.download_asset("asset123", test_file)
 
-                    # Should return True to indicate success
-                    self.assertTrue(result)
+                     # Should return True to indicate success
+                     self.assertTrue(result)
 
     @patch("requests.Session.request")
     def test_download_asset_success_no_path(self, mock_request):

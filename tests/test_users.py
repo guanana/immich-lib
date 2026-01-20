@@ -1,20 +1,15 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import requests
-from immich_lib.api.users import UsersMixin
+from immich_lib.client import ImmichClient
 
 
 class TestUsersMixin(unittest.TestCase):
     def setUp(self):
-        # Create a mock client instance
+        # Create a proper client instance that will be used for testing
         self.server_url = "http://localhost:2283"
         self.api_key = "test-api-key"
-        # Create a minimal mock client that inherits from UsersMixin
-        self.client = type("MockClient", (UsersMixin,), {})()
-        self.client.server_url = self.server_url
-        self.client.api_url = f"{self.server_url}/api"
-        self.client.headers = {"x-api-key": self.api_key}
-        self.client.session = MagicMock()
+        self.client = ImmichClient(self.server_url, self.api_key)
 
     @patch("requests.Session.request")
     def test_list_users_success(self, mock_request):

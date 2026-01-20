@@ -1,20 +1,15 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import requests
-from immich_lib.api.trash import TrashMixin
+from immich_lib.client import ImmichClient
 
 
 class TestTrashMixin(unittest.TestCase):
     def setUp(self):
-        # Create a mock client instance
+        # Create a proper client instance that will be used for testing
         self.server_url = "http://localhost:2283"
         self.api_key = "test-api-key"
-        # Create a minimal mock client that inherits from TrashMixin
-        self.client = type("MockClient", (TrashMixin,), {})()
-        self.client.server_url = self.server_url
-        self.client.api_url = f"{self.server_url}/api"
-        self.client.headers = {"x-api-key": self.api_key}
-        self.client.session = MagicMock()
+        self.client = ImmichClient(self.server_url, self.api_key)
 
     @patch("requests.Session.request")
     def test_get_trash_success(self, mock_request):
